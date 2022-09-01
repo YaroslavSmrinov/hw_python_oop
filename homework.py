@@ -1,6 +1,8 @@
-from typing import Dict, Any
+from typing import Dict, Type
+from dataclasses import dataclass, asdict
 
 
+@dataclass
 class InfoMessage:
     training_type: str
     duration: float
@@ -8,24 +10,13 @@ class InfoMessage:
     speed: float
     calories: float
 
-    def __init__(self,
-                 training_type: str,
-                 duration: float,
-                 distance: float,
-                 speed: float,
-                 calories: float) -> None:
-        self.training_type = training_type
-        self.duration = duration
-        self.distance = distance
-        self.speed = speed
-        self.calories = calories
-
     def get_message(self) -> str:
-        return (f"Тип тренировки: {self.training_type}; "
-                f"Длительность: {self.duration:.3f} ч.; "
-                f"Дистанция: {self.distance:.3f} км; "
-                f"Ср. скорость: {self.speed:.3f} км/ч; "
-                f"Потрачено ккал: {self.calories:.3f}.")
+        msg = ("Тип тренировки: {training_type}; "
+               "Длительность: {duration:.3f} ч.; "
+               "Дистанция: {distance:.3f} км; "
+               "Ср. скорость: {speed:.3f} км/ч; "
+               "Потрачено ккал: {calories:.3f}.")
+        return msg.format(**asdict(self))
 
 
 class Training:
@@ -52,7 +43,9 @@ class Training:
         return dist / self.duration
 
     def get_spent_calories(self) -> float:
-        pass
+        raise NotImplementedError('В дочернем классе %s '
+                                  'не переопределен метод '
+                                  'расчёта калорий.' % self.__class__.__name__)
 
     def show_training_info(self) -> InfoMessage:
         training_type: str = self.__class__.__name__
@@ -125,12 +118,14 @@ class Swimming(Training):
 
 
 def read_package(workout_type: str, data: list) -> Training:
-    sport_types: Dict[str, Any] = {
+    sport_types: Dict[str, Type[Training]] = {
         'SWM': Swimming,
         'RUN': Running,
         'WLK': SportsWalking
     }
-    return sport_types[workout_type](*data)
+    if workout_type in sport_types:
+        return sport_types[workout_type](*data)
+    raise KeyError("Unknown training type.")
 
 
 def main(training: Training) -> None:
